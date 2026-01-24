@@ -1,0 +1,70 @@
+plugins {
+	id 'java'
+	id 'org.springframework.boot' version '4.0.0'
+	id 'io.spring.dependency-management' version '1.1.7'
+}
+
+group = 'com.divinecorner'
+version = '1.0.0'
+description = 'divinecorner'
+
+java {
+	toolchain {
+		languageVersion = JavaLanguageVersion.of(17)
+	}
+}
+
+configurations {
+	compileOnly {
+		extendsFrom annotationProcessor
+	}
+}
+
+repositories {
+	mavenCentral()
+}
+
+dependencies {
+	// Spring Boot Starters
+	implementation 'org.springframework.boot:spring-boot-starter-web'
+	implementation 'org.springframework.boot:spring-boot-starter-data-jpa'
+	implementation 'org.springframework.boot:spring-boot-starter-data-redis'
+	implementation 'org.springframework.boot:spring-boot-starter-data-elasticsearch'
+	implementation 'org.springframework.boot:spring-boot-starter-security'
+	implementation 'org.springframework.boot:spring-boot-starter-validation'
+	implementation 'org.springframework.boot:spring-boot-starter-cache'
+	implementation 'org.springframework.boot:spring-boot-starter-data-redis'
+	implementation 'com.fasterxml.jackson.datatype:jackson-datatype-jsr310'
+
+	// JWT
+	implementation 'io.jsonwebtoken:jjwt-api:0.12.3'
+	runtimeOnly 'io.jsonwebtoken:jjwt-impl:0.12.3'
+	runtimeOnly 'io.jsonwebtoken:jjwt-jackson:0.12.3'
+
+	// Database
+	runtimeOnly 'com.mysql:mysql-connector-j'
+
+	// Lombok
+	compileOnly 'org.projectlombok:lombok'
+	annotationProcessor 'org.projectlombok:lombok'
+
+	// MapStruct
+	implementation 'org.mapstruct:mapstruct:1.5.5.Final'
+	annotationProcessor 'org.mapstruct:mapstruct-processor:1.5.5.Final'
+
+	// Redis
+	implementation 'org.springframework.boot:spring-boot-starter-data-redis'
+	implementation 'redis.clients:jedis'
+
+	// Testing
+	testImplementation 'org.springframework.boot:spring-boot-starter-test'
+	testImplementation 'org.springframework.security:spring-security-test'
+	testImplementation 'org.junit.jupiter:junit-jupiter'
+
+	// Development
+	developmentOnly 'org.springframework.boot:spring-boot-devtools'
+}
+
+tasks.named('test') {
+	useJUnitPlatform()
+}

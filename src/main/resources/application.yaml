@@ -1,0 +1,76 @@
+spring:
+  application:
+    name: divine-corner
+
+  datasource:
+    url: jdbc:mysql://localhost:3306/divinecorner?useSSL=false&serverTimezone=UTC
+    username: ${DB_USERNAME:root}
+    password: ${DB_PASSWORD:root}
+    driver-class-name: com.mysql.cj.jdbc.Driver
+
+  jpa:
+    hibernate:
+      ddl-auto: update
+    show-sql: true
+    properties:
+      hibernate:
+        dialect: org.hibernate.dialect.MySQLDialect
+        format_sql: true
+
+  data:
+    redis:
+      host: ${REDIS_HOST:localhost}
+      port: ${REDIS_PORT:6379}
+      password: ${REDIS_PASSWORD:}
+      timeout: 60000
+
+    elasticsearch:
+      repositories:
+        enabled: true
+
+  elasticsearch:
+    uris: ${ELASTICSEARCH_URI:http://localhost:9200}
+
+  cache:
+    type: redis
+    redis:
+      time-to-live: 600000
+
+server:
+  port: 8080
+  servlet:
+    context-path: /api
+  error:
+    include-message: always
+    include-binding-errors: always
+
+jwt:
+  secret:
+    access: ${JWT_ACCESS_SECRET:your-256-bit-secret-key-for-access-token-change-in-production}
+    refresh: ${JWT_REFRESH_SECRET:your-256-bit-secret-key-for-refresh-token-change-in-production}
+  expiration:
+    access: 900000   # 15 minutes
+    refresh: 604800000  # 7 days
+  cookie:
+    name:
+      access: divine_access_token
+      refresh: divine_refresh_token
+    domain: ${COOKIE_DOMAIN:localhost}
+    secure: ${COOKIE_SECURE:false}
+    http-only: true
+    same-site: strict
+
+app:
+  cors:
+    allowed-origins: ${ALLOWED_ORIGINS:http://localhost:3000}
+  admin:
+    email: admin@divinecorner.com
+    password: ${ADMIN_PASSWORD:Admin@123}
+  image:
+    base-url: D:/Projects/the-divine-corner/backend/divinecorner/photos
+
+logging:
+  level:
+    com.divinecorner: DEBUG
+    org.springframework.security: DEBUG
+    org.hibernate.SQL: DEBUG
