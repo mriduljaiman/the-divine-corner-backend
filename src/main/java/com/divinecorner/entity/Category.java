@@ -31,6 +31,7 @@ public class Category {
     private String skuPrefix;
 
     @Column(nullable = false)
+    @Builder.Default
     private Boolean active = true;
 
     @CreationTimestamp
