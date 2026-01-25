@@ -5,6 +5,7 @@ import com.divinecorner.dto.CreateOrderRequest;
 import com.divinecorner.dto.UpdateOrderStatusRequest;
 import com.divinecorner.dto.response.*;
 import com.divinecorner.entity.*;
+import com.divinecorner.enums.MovementType;
 import com.divinecorner.enums.OrderStatus;
 import com.divinecorner.enums.UserRole;
 import com.divinecorner.exception.BadRequestException;
@@ -31,6 +32,7 @@ public class OrderService {
     private final CartRepository cartRepository;
     private final UserRepository userRepository;
     private final ProductRepository productRepository;
+    private final StockMovementRepository stockMovementRepository;
 
     private static final DateTimeFormatter formatter = DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss");
 
@@ -46,7 +48,7 @@ public class OrderService {
             throw new BadRequestException("Cart is empty");
         }
 
-        BigDecimal totalAmount = BigDecimal.ZERO;
+        BigDecimal subtotal = BigDecimal.ZERO;
 
         for (CartItem cartItem : cart.getItems()) {
             if (cartItem.getProduct().getStockQuantity() < cartItem.getQuantity()) {
@@ -54,28 +56,38 @@ public class OrderService {
             }
             BigDecimal price = cartItem.getProduct().getDiscountPrice() != null ?
                     cartItem.getProduct().getDiscountPrice() : cartItem.getProduct().getPrice();
-            totalAmount = totalAmount.add(price.multiply(BigDecimal.valueOf(cartItem.getQuantity())));
+            subtotal = subtotal.add(price.multiply(BigDecimal.valueOf(cartItem.getQuantity())));
         }
+
+        // Calculate shipping charges (can inject ShippingService later)
+        BigDecimal shippingCharges = subtotal.compareTo(new BigDecimal("500")) >= 0 ?
+            BigDecimal.ZERO : new BigDecimal("50");
+
+        BigDecimal totalAmount = subtotal.add(shippingCharges);
 
         String orderNumber = "ORD-" + System.currentTimeMillis();
 
-        Order order = Order.builder()
-                .orderNumber(orderNumber)
-                .user(user)
-                .totalAmount(totalAmount)
-                .status(OrderStatus.PENDING)
-                .shippingAddress(request.getShippingAddress())
-                .shippingCity(request.getShippingCity())
-                .shippingState(request.getShippingState())
-                .shippingZipCode(request.getShippingZipCode())
-                .shippingCountry(request.getShippingCountry())
-                .customerPhone(request.getCustomerPhone())
-                .customerEmail(request.getCustomerEmail())
-                .paymentMethod(request.getPaymentMethod())
-                .paymentStatus("PENDING")
-                .build();
+        // Create order entity without using builder to avoid timestamp issues
+        Order order = new Order();
+        order.setOrderNumber(orderNumber);
+        order.setUser(user);
+        order.setSubtotal(subtotal);
+        order.setShippingCharges(shippingCharges);
+        order.setDiscount(BigDecimal.ZERO);
+        order.setTotalAmount(totalAmount);
+        order.setStatus(OrderStatus.PENDING);
+        order.setShippingAddress(request.getShippingAddress());
+        order.setShippingCity(request.getShippingCity());
+        order.setShippingState(request.getShippingState());
+        order.setShippingZipCode(request.getShippingZipCode());
+        order.setShippingCountry(request.getShippingCountry());
+        order.setCustomerPhone(request.getCustomerPhone());
+        order.setCustomerEmail(request.getCustomerEmail());
+        order.setPaymentMethod(request.getPaymentMethod());
+        order.setPaymentStatus("PENDING");
 
         order = orderRepository.save(order);
+        orderRepository.flush(); // Ensure timestamps are populated
 
         for (CartItem cartItem : cart.getItems()) {
             BigDecimal price = cartItem.getProduct().getDiscountPrice() != null ?
@@ -98,6 +110,29 @@ public class OrderService {
             Product product = cartItem.getProduct();
             product.setStockQuantity(product.getStockQuantity() - cartItem.getQuantity());
             productRepository.save(product);
+
+            // Create stock movement ledger entry for this order
+            Integer currentStock = stockMovementRepository.getCurrentStock(product.getId());
+            if (currentStock == null) {
+                currentStock = product.getStockQuantity() + cartItem.getQuantity(); // Old stock before reduction
+            }
+            Integer newBalance = currentStock - cartItem.getQuantity();
+
+            StockMovement movement = StockMovement.builder()
+                .product(product)
+                .movementType(MovementType.ONLINE_ORDER)
+                .quantity(-cartItem.getQuantity())  // Negative for stock OUT
+                .balanceAfter(newBalance)
+                .movementDate(LocalDateTime.now())
+                .referenceType("ORDER")
+                .referenceId(order.getId().toString())
+                .createdBy(user)
+                .unitCost(price)  // Using the sale price
+                .totalValue(price.multiply(new BigDecimal(cartItem.getQuantity())))
+                .remarks("Online order: " + order.getOrderNumber())
+                .build();
+
+            stockMovementRepository.save(movement);
         }
 
         cartService.clearCart(userId);
@@ -206,6 +241,9 @@ public class OrderService {
                 .id(order.getId())
                 .orderNumber(order.getOrderNumber())
                 .items(order.getItems().stream().map(this::mapToItemResponse).toList())
+                .subtotal(order.getSubtotal() != null ? order.getSubtotal() : BigDecimal.ZERO)
+                .shippingCharges(order.getShippingCharges() != null ? order.getShippingCharges() : BigDecimal.ZERO)
+                .discount(order.getDiscount() != null ? order.getDiscount() : BigDecimal.ZERO)
                 .totalAmount(order.getTotalAmount())
                 .status(order.getStatus().name())
                 .shippingAddress(order.getShippingAddress())
@@ -218,7 +256,7 @@ public class OrderService {
                 .paymentMethod(order.getPaymentMethod())
                 .paymentStatus(order.getPaymentStatus())
                 .trackingNumber(order.getTrackingNumber())
-                .createdAt(order.getCreatedAt().format(formatter))
+                .createdAt(order.getCreatedAt() != null ? order.getCreatedAt().format(formatter) : LocalDateTime.now().format(formatter))
                 .deliveredAt(order.getDeliveredAt() != null ? order.getDeliveredAt().format(formatter) : null)
                 .build();
     }

@@ -1,0 +1,106 @@
+spring:
+  application:
+    name: divine-corner
+
+  datasource:
+    url: ${DATABASE_URL:jdbc:mysql://localhost:3306/divinecorner?useSSL=true&serverTimezone=UTC}
+    username: ${DB_USERNAME}
+    password: ${DB_PASSWORD}
+    driver-class-name: com.mysql.cj.jdbc.Driver
+    hikari:
+      maximum-pool-size: 10
+      minimum-idle: 5
+      connection-timeout: 30000
+      idle-timeout: 600000
+      max-lifetime: 1800000
+
+  jpa:
+    hibernate:
+      ddl-auto: update
+    show-sql: false
+    properties:
+      hibernate:
+        dialect: org.hibernate.dialect.MySQLDialect
+        format_sql: false
+        jdbc:
+          batch_size: 20
+        order_inserts: true
+        order_updates: true
+
+  data:
+    redis:
+      host: ${REDIS_HOST:localhost}
+      port: ${REDIS_PORT:6379}
+      password: ${REDIS_PASSWORD:}
+      timeout: 60000
+
+  cache:
+    type: redis
+    redis:
+      time-to-live: 600000
+
+  servlet:
+    multipart:
+      enabled: true
+      max-file-size: 5MB
+      max-request-size: 10MB
+
+server:
+  port: ${PORT:8080}
+  servlet:
+    context-path: /api
+  error:
+    include-message: always
+    include-binding-errors: always
+  compression:
+    enabled: true
+    mime-types: application/json,application/xml,text/html,text/xml,text/plain
+  shutdown: graceful
+
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health,info,metrics
+  endpoint:
+    health:
+      show-details: when-authorized
+  health:
+    defaults:
+      enabled: true
+
+jwt:
+  secret:
+    access: ${JWT_ACCESS_SECRET}
+    refresh: ${JWT_REFRESH_SECRET}
+  expiration:
+    access: 900000   # 15 minutes
+    refresh: 604800000  # 7 days
+  cookie:
+    name:
+      access: divine_access_token
+      refresh: divine_refresh_token
+    domain: ${COOKIE_DOMAIN}
+    secure: ${COOKIE_SECURE:true}
+    http-only: true
+    same-site: ${COOKIE_SAME_SITE:none}
+
+app:
+  cors:
+    allowed-origins: ${ALLOWED_ORIGINS}
+  admin:
+    email: ${ADMIN_EMAIL:admin@divinecorner.com}
+    password: ${ADMIN_PASSWORD}
+  base-url: ${APP_BASE_URL}
+
+file:
+  upload-dir: ${FILE_UPLOAD_DIR:/app/uploads}
+
+logging:
+  level:
+    root: INFO
+    com.divinecorner: INFO
+    org.springframework.security: WARN
+    org.hibernate.SQL: WARN
+  pattern:
+    console: "%d{yyyy-MM-dd HH:mm:ss} - %msg%n"

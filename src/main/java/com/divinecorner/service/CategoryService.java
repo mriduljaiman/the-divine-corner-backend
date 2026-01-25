@@ -28,7 +28,7 @@ public class CategoryService {
     private final CategoryRepository categoryRepository;
 
     @Transactional
-    @CacheEvict(value = "categories", allEntries = true)
+    // @CacheEvict(value = "categories", allEntries = true) // Temporarily disabled
     public CategoryResponse createCategory(CreateCategoryRequest request) {
         log.info("Creating category: {}", request.getName());
 
@@ -40,6 +40,7 @@ public class CategoryService {
                 .name(request.getName())
                 .description(request.getDescription())
                 .imageUrl(request.getImageUrl())
+                .skuPrefix(request.getSkuPrefix())
                 .active(true)
                 .build();
 
@@ -50,7 +51,7 @@ public class CategoryService {
     }
 
     @Transactional(readOnly = true)
-    @Cacheable(value = "categories", key = "'all-active'")
+    // @Cacheable(value = "categories", key = "'all-active'") // Temporarily disabled due to Redis serialization issue
     public List<CategoryResponse> getAllActiveCategories() {
         log.info("Fetching all active categories from DB");
 
@@ -66,7 +67,7 @@ public class CategoryService {
     }
 
     @Transactional(readOnly = true)
-    @Cacheable(value = "categories", key = "#id")
+    // @Cacheable(value = "categories", key = "#id") // Temporarily disabled
     public CategoryResponse getCategoryById(UUID id) {
         log.info("Fetching category by ID: {}", id);
 
@@ -75,7 +76,7 @@ public class CategoryService {
     }
 
     @Transactional
-    @CacheEvict(value = "categories", allEntries = true)
+    // @CacheEvict(value = "categories", allEntries = true) // Temporarily disabled
     public CategoryResponse updateCategory(UUID id, UpdateCategoryRequest request) {
         log.info("Updating category: {}", id);
 
@@ -90,6 +91,7 @@ public class CategoryService {
 
         if (request.getDescription() != null) category.setDescription(request.getDescription());
         if (request.getImageUrl() != null) category.setImageUrl(request.getImageUrl());
+        if (request.getSkuPrefix() != null) category.setSkuPrefix(request.getSkuPrefix());
         if (request.getActive() != null) category.setActive(request.getActive());
 
         category = categoryRepository.save(category);
@@ -99,7 +101,7 @@ public class CategoryService {
     }
 
     @Transactional
-    @CacheEvict(value = "categories", allEntries = true)
+    // @CacheEvict(value = "categories", allEntries = true) // Temporarily disabled
     public void deleteCategory(UUID id) {
         log.info("Deleting category: {}", id);
 
@@ -120,6 +122,7 @@ public class CategoryService {
                 .name(category.getName())
                 .description(category.getDescription())
                 .imageUrl(category.getImageUrl())
+                .skuPrefix(category.getSkuPrefix())
                 .active(category.getActive())
                 .build();
     }

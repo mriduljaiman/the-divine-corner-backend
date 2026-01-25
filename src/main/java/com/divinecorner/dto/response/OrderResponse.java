@@ -16,6 +16,9 @@ public class OrderResponse {
     private UUID id;
     private String orderNumber;
     private List<OrderItemResponse> items;
+    private BigDecimal subtotal;
+    private BigDecimal shippingCharges;
+    private BigDecimal discount;
     private BigDecimal totalAmount;
     private String status;
     private String shippingAddress;

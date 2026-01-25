@@ -36,6 +36,12 @@ spring:
     redis:
       time-to-live: 600000
 
+  servlet:
+    multipart:
+      enabled: true
+      max-file-size: 5MB
+      max-request-size: 10MB
+
 server:
   port: 8080
   servlet:
@@ -68,6 +74,10 @@ app:
     password: ${ADMIN_PASSWORD:Admin@123}
   image:
     base-url: D:/Projects/the-divine-corner/backend/divinecorner/photos
+  base-url: ${APP_BASE_URL:http://localhost:8080/api}
+
+file:
+  upload-dir: ${FILE_UPLOAD_DIR:D:/Projects/the-divine-corner/backend/divinecorner/uploads}
 
 logging:
   level:

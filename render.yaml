@@ -1,0 +1,81 @@
+services:
+  # Spring Boot Backend
+  - type: web
+    name: divine-corner-backend
+    env: docker
+    dockerfilePath: ./Dockerfile
+    region: oregon
+    plan: starter
+    branch: main
+    healthCheckPath: /api/actuator/health
+    envVars:
+      # Database (use Render MySQL or external MySQL)
+      - key: DATABASE_URL
+        fromDatabase:
+          name: divine-corner-db
+          property: connectionString
+      - key: DB_USERNAME
+        fromDatabase:
+          name: divine-corner-db
+          property: user
+      - key: DB_PASSWORD
+        fromDatabase:
+          name: divine-corner-db
+          property: password
+
+      # Redis (use Render Redis or external Redis)
+      - key: REDIS_HOST
+        fromService:
+          name: divine-corner-redis
+          type: redis
+          property: host
+      - key: REDIS_PORT
+        fromService:
+          name: divine-corner-redis
+          type: redis
+          property: port
+
+      # JWT Secrets (set in Render dashboard)
+      - key: JWT_ACCESS_SECRET
+        generateValue: true
+      - key: JWT_REFRESH_SECRET
+        generateValue: true
+
+      # App Configuration
+      - key: APP_BASE_URL
+        value: https://divine-corner-backend.onrender.com/api
+      - key: ALLOWED_ORIGINS
+        value: https://yourdomain.com,https://www.yourdomain.com
+      - key: COOKIE_DOMAIN
+        value: .onrender.com
+      - key: COOKIE_SECURE
+        value: true
+      - key: COOKIE_SAME_SITE
+        value: none
+
+      # Admin credentials
+      - key: ADMIN_EMAIL
+        value: admin@divinecorner.com
+      - key: ADMIN_PASSWORD
+        sync: false  # Set manually in Render dashboard
+
+      # File upload
+      - key: FILE_UPLOAD_DIR
+        value: /app/uploads
+
+      # Spring Profile
+      - key: SPRING_PROFILES_ACTIVE
+        value: prod
+
+databases:
+  # MySQL Database
+  - name: divine-corner-db
+    databaseName: divinecorner
+    user: divinecorner_user
+    plan: starter
+
+# Redis (optional - comment out if using external Redis)
+# - type: redis
+#   name: divine-corner-redis
+#   plan: starter
+#   maxmemoryPolicy: allkeys-lru

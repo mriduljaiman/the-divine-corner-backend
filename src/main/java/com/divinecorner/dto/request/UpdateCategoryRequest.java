@@ -11,5 +11,6 @@ public class UpdateCategoryRequest {
     private String name;
     private String description;
     private String imageUrl;
+    private String skuPrefix;
     private Boolean active;
 }
