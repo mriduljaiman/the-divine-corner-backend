@@ -28,6 +28,9 @@ public class Category {
     private String imageUrl;
 
     @Column(length = 10)
+    private String icon;
+
+    @Column(length = 10)
     private String skuPrefix;
 
     @Column(nullable = false)

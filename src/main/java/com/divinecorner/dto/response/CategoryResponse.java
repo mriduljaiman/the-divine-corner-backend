@@ -15,6 +15,7 @@ public class CategoryResponse {
     private String name;
     private String description;
     private String imageUrl;
+    private String icon;
     private String skuPrefix;
     private Boolean active;
 }

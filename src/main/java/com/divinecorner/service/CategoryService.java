@@ -40,6 +40,7 @@ public class CategoryService {
                 .name(request.getName())
                 .description(request.getDescription())
                 .imageUrl(request.getImageUrl())
+                .icon(request.getIcon())
                 .skuPrefix(request.getSkuPrefix())
                 .active(true)
                 .build();
@@ -91,6 +92,7 @@ public class CategoryService {
 
         if (request.getDescription() != null) category.setDescription(request.getDescription());
         if (request.getImageUrl() != null) category.setImageUrl(request.getImageUrl());
+        if (request.getIcon() != null) category.setIcon(request.getIcon());
         if (request.getSkuPrefix() != null) category.setSkuPrefix(request.getSkuPrefix());
         if (request.getActive() != null) category.setActive(request.getActive());
 
@@ -122,6 +124,7 @@ public class CategoryService {
                 .name(category.getName())
                 .description(category.getDescription())
                 .imageUrl(category.getImageUrl())
+                .icon(category.getIcon())
                 .skuPrefix(category.getSkuPrefix())
                 .active(category.getActive())
                 .build();
