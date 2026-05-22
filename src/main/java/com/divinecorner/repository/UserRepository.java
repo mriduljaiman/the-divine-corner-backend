@@ -1,4 +1,4 @@
-package com.divinecorner.repository;
+﻿package com.divinecorner.repository;
 
 import com.divinecorner.entity.User;
 import com.divinecorner.enums.UserRole;
@@ -11,6 +11,7 @@ import java.util.UUID;
 public interface UserRepository extends JpaRepository<User, UUID> {
     Optional<User> findByEmail(String email);
     boolean existsByEmail(String email);
+    boolean existsByPhone(String phone);
     Page<User> findByRole(UserRole role, Pageable pageable);
     long countByRole(UserRole role);
 }

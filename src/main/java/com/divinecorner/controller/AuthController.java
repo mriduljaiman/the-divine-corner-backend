@@ -1,8 +1,9 @@
-package com.divinecorner.controller;
+﻿package com.divinecorner.controller;
 
 import com.divinecorner.dto.*;
 import com.divinecorner.dto.LoginRequest;
 import com.divinecorner.dto.RegisterRequest;
+import com.divinecorner.dto.SendOtpRequest;
 import com.divinecorner.dto.response.ApiResponse;
 import com.divinecorner.dto.response.AuthResponse;
 import com.divinecorner.service.AuthService;
@@ -19,6 +20,15 @@ import org.springframework.web.bind.annotation.*;
 public class AuthController {
 
     private final AuthService authService;
+
+    @PostMapping("/send-otp")
+    public ResponseEntity<ApiResponse> sendOtp(@Valid @RequestBody SendOtpRequest request) {
+        authService.sendOtp(request);
+        return ResponseEntity.ok(ApiResponse.builder()
+                .success(true)
+                .message("OTP sent to " + request.getEmail())
+                .build());
+    }
 
     @PostMapping("/register")
     public ResponseEntity<AuthResponse> register(

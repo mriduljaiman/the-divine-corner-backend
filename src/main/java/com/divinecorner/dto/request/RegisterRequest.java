@@ -1,4 +1,4 @@
-package com.divinecorner.dto;
+﻿package com.divinecorner.dto;
 
 import jakarta.validation.constraints.Email;
 import jakarta.validation.constraints.NotBlank;
@@ -21,4 +21,6 @@ public class RegisterRequest {
     @NotBlank
     private String lastName;
     private String phone;
+    @NotBlank
+    private String otp;
 }

@@ -1,8 +1,9 @@
-package com.divinecorner.service;
+﻿package com.divinecorner.service;
 
 import com.divinecorner.dto.*;
 import com.divinecorner.dto.LoginRequest;
 import com.divinecorner.dto.RegisterRequest;
+import com.divinecorner.dto.SendOtpRequest;
 import com.divinecorner.dto.response.AuthResponse;
 import com.divinecorner.dto.response.UserResponse;
 import com.divinecorner.entity.User;
@@ -30,6 +31,8 @@ public class AuthService {
     private final UserRepository userRepository;
     private final PasswordEncoder passwordEncoder;
     private final JwtUtil jwtUtil;
+    private final OtpService otpService;
+    private final EmailService emailService;
 
     @Value("${jwt.cookie.name.access}")
     private String accessTokenCookie;
@@ -52,10 +55,27 @@ public class AuthService {
     @Value("${jwt.expiration.refresh}")
     private Long refreshExpiration;
 
+    public void sendOtp(SendOtpRequest request) {
+        if (userRepository.existsByEmail(request.getEmail())) {
+            throw new BadRequestException("Email already registered");
+        }
+        String otp = otpService.generateAndStore(request.getEmail());
+        emailService.sendOtp(request.getEmail(), otp);
+    }
+
     @Transactional
     public AuthResponse register(RegisterRequest request, HttpServletResponse response) {
         if (userRepository.existsByEmail(request.getEmail())) {
-            throw new BadRequestException("Email already exists");
+            throw new BadRequestException("Email already registered");
+        }
+
+        if (request.getPhone() != null && !request.getPhone().isBlank()
+                && userRepository.existsByPhone(request.getPhone())) {
+            throw new BadRequestException("Mobile number already registered");
+        }
+
+        if (!otpService.verifyAndConsume(request.getEmail(), request.getOtp())) {
+            throw new BadRequestException("Invalid or expired OTP");
         }
 
         User user = User.builder()
@@ -70,14 +90,11 @@ public class AuthService {
 
         user = userRepository.save(user);
 
-        // Generate tokens
         String accessToken = jwtUtil.generateAccessToken(user.getId(), user.getEmail(), user.getRole().name());
         String refreshToken = jwtUtil.generateRefreshToken(user.getId());
 
-        // Set cookies (for browsers)
         setAuthCookies(accessToken, refreshToken, response);
 
-        // Return tokens in response body as well
         return AuthResponse.builder()
                 .message("Registration successful")
                 .user(mapToUserResponse(user))
@@ -100,14 +117,11 @@ public class AuthService {
             throw new BadRequestException("Account is deactivated");
         }
 
-        // Generate tokens
         String accessToken = jwtUtil.generateAccessToken(user.getId(), user.getEmail(), user.getRole().name());
         String refreshToken = jwtUtil.generateRefreshToken(user.getId());
 
-        // Set cookies (for browsers)
         setAuthCookies(accessToken, refreshToken, response);
 
-        // Return tokens in response body as well
         return AuthResponse.builder()
                 .message("Login successful")
                 .user(mapToUserResponse(user))
@@ -132,7 +146,6 @@ public class AuthService {
                 }
             }
         }
-        // Also try X-Refresh-Token header (for mobile where cookies are blocked)
         if (refreshToken == null) {
             refreshToken = request.getHeader("X-Refresh-Token");
         }
