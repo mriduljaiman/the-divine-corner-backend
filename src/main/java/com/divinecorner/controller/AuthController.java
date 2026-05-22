@@ -6,6 +6,7 @@ import com.divinecorner.dto.RegisterRequest;
 import com.divinecorner.dto.response.ApiResponse;
 import com.divinecorner.dto.response.AuthResponse;
 import com.divinecorner.service.AuthService;
+import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
@@ -31,6 +32,11 @@ public class AuthController {
             @Valid @RequestBody LoginRequest request,
             HttpServletResponse response) {
         return ResponseEntity.ok(authService.login(request, response));
+    }
+
+    @PostMapping("/refresh")
+    public ResponseEntity<AuthResponse> refresh(HttpServletRequest request, HttpServletResponse response) {
+        return ResponseEntity.ok(authService.refresh(request, response));
     }
 
     @PostMapping("/logout")

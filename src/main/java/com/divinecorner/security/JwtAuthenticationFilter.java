@@ -56,6 +56,12 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
     }
 
     private String getTokenFromCookie(HttpServletRequest request) {
+        // Try Authorization header first (works on all mobile browsers)
+        String authHeader = request.getHeader("Authorization");
+        if (authHeader != null && authHeader.startsWith("Bearer ")) {
+            return authHeader.substring(7);
+        }
+        // Fallback to cookie
         if (request.getCookies() != null) {
             for (Cookie cookie : request.getCookies()) {
                 if (accessTokenCookie.equals(cookie.getName())) {

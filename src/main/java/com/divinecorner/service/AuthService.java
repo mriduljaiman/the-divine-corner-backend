@@ -10,13 +10,18 @@ import com.divinecorner.enums.UserRole;
 import com.divinecorner.exception.BadRequestException;
 import com.divinecorner.repository.UserRepository;
 import com.divinecorner.security.JwtUtil;
+import io.jsonwebtoken.Claims;
 import jakarta.servlet.http.Cookie;
+import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import lombok.RequiredArgsConstructor;
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.http.HttpHeaders;
+import org.springframework.http.ResponseCookie;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import java.util.UUID;
 
 @Service
 @RequiredArgsConstructor
@@ -37,6 +42,9 @@ public class AuthService {
 
     @Value("${jwt.cookie.secure}")
     private boolean cookieSecure;
+
+    @Value("${jwt.cookie.same-site:None}")
+    private String cookieSameSite;
 
     @Value("${jwt.expiration.access}")
     private Long accessExpiration;
@@ -113,30 +121,60 @@ public class AuthService {
         clearAuthCookies(response);
     }
 
-    private void setAuthCookies(String accessToken, String refreshToken, HttpServletResponse response) {
-        Cookie accessCookie = createCookie(accessTokenCookie, accessToken, accessExpiration.intValue() / 1000);
-        Cookie refreshCookie = createCookie(refreshTokenCookie, refreshToken, refreshExpiration.intValue() / 1000);
+    @Transactional(readOnly = true)
+    public AuthResponse refresh(HttpServletRequest request, HttpServletResponse response) {
+        String refreshToken = null;
+        if (request.getCookies() != null) {
+            for (Cookie c : request.getCookies()) {
+                if (refreshTokenCookie.equals(c.getName())) {
+                    refreshToken = c.getValue();
+                    break;
+                }
+            }
+        }
+        // Also try X-Refresh-Token header (for mobile where cookies are blocked)
+        if (refreshToken == null) {
+            refreshToken = request.getHeader("X-Refresh-Token");
+        }
+        if (refreshToken == null || !jwtUtil.validateToken(refreshToken, true)) {
+            throw new BadRequestException("Invalid or expired refresh token");
+        }
+        Claims claims = jwtUtil.parseRefreshToken(refreshToken);
+        UUID userId = UUID.fromString(claims.getSubject());
+        User user = userRepository.findById(userId)
+                .orElseThrow(() -> new BadRequestException("User not found"));
+        String newAccess = jwtUtil.generateAccessToken(user.getId(), user.getEmail(), user.getRole().name());
+        String newRefresh = jwtUtil.generateRefreshToken(user.getId());
+        setAuthCookies(newAccess, newRefresh, response);
+        return AuthResponse.builder()
+                .message("Token refreshed")
+                .user(mapToUserResponse(user))
+                .accessToken(newAccess)
+                .refreshToken(newRefresh)
+                .tokenType("Bearer")
+                .build();
+    }
 
-        response.addCookie(accessCookie);
-        response.addCookie(refreshCookie);
+    private void setAuthCookies(String accessToken, String refreshToken, HttpServletResponse response) {
+        response.addHeader(HttpHeaders.SET_COOKIE, buildCookieString(accessTokenCookie, accessToken, accessExpiration.intValue() / 1000));
+        response.addHeader(HttpHeaders.SET_COOKIE, buildCookieString(refreshTokenCookie, refreshToken, refreshExpiration.intValue() / 1000));
     }
 
     private void clearAuthCookies(HttpServletResponse response) {
-        Cookie accessCookie = createCookie(accessTokenCookie, "", 0);
-        Cookie refreshCookie = createCookie(refreshTokenCookie, "", 0);
-
-        response.addCookie(accessCookie);
-        response.addCookie(refreshCookie);
+        response.addHeader(HttpHeaders.SET_COOKIE, buildCookieString(accessTokenCookie, "", 0));
+        response.addHeader(HttpHeaders.SET_COOKIE, buildCookieString(refreshTokenCookie, "", 0));
     }
 
-    private Cookie createCookie(String name, String value, int maxAge) {
-        Cookie cookie = new Cookie(name, value);
-        cookie.setHttpOnly(true);
-        cookie.setSecure(cookieSecure);
-        cookie.setPath("/");
-        cookie.setMaxAge(maxAge);
-        cookie.setDomain(cookieDomain);
-        return cookie;
+    private String buildCookieString(String name, String value, int maxAge) {
+        return ResponseCookie.from(name, value)
+                .httpOnly(true)
+                .secure(cookieSecure)
+                .path("/")
+                .maxAge(maxAge)
+                .domain(cookieDomain)
+                .sameSite(cookieSameSite)
+                .build()
+                .toString();
     }
 
     private UserResponse mapToUserResponse(User user) {

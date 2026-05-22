@@ -74,7 +74,7 @@ jwt:
     access: ${JWT_ACCESS_SECRET}
     refresh: ${JWT_REFRESH_SECRET}
   expiration:
-    access: 900000   # 15 minutes
+    access: 28800000  # 8 hours
     refresh: 604800000  # 7 days
   cookie:
     name:
@@ -92,6 +92,12 @@ app:
     email: ${ADMIN_EMAIL:admin@divinecorner.com}
     password: ${ADMIN_PASSWORD}
   base-url: ${APP_BASE_URL}
+
+cloudinary:
+  cloud-name: ${CLOUDINARY_CLOUD_NAME:dkkfpfmbv}
+  api-key: ${CLOUDINARY_API_KEY:199444948617819}
+  api-secret: ${CLOUDINARY_API_SECRET:m3LMPoNxm1PYzYXOKmZRD55ac5c}
+  folder: divine-corner
 
 file:
   upload-dir: ${FILE_UPLOAD_DIR:/app/uploads}
