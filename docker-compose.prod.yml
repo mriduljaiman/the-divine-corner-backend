@@ -68,7 +68,7 @@ services:
       CLOUDINARY_API_KEY: ${CLOUDINARY_API_KEY}
       CLOUDINARY_API_SECRET: ${CLOUDINARY_API_SECRET}
     ports:
-      - "127.0.0.1:8080:8080"
+      - "127.0.0.1:9008:8080"
     volumes:
       - uploads-data:/app/uploads
     networks:
