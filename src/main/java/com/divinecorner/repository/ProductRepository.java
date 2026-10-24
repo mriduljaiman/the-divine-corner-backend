@@ -22,7 +22,9 @@ public interface ProductRepository extends JpaRepository<Product, UUID> {
             "(:categoryId IS NULL OR p.category.id = :categoryId) AND " +
             "(:minPrice IS NULL OR p.price >= :minPrice) AND " +
             "(:maxPrice IS NULL OR p.price <= :maxPrice) AND " +
-            "(:search IS NULL OR LOWER(p.name) LIKE LOWER(CONCAT('%', :search, '%')))")
+            "(:search IS NULL OR LOWER(p.name) LIKE LOWER(CONCAT('%', :search, '%')) " +
+            "OR LOWER(p.sku) LIKE LOWER(CONCAT('%', :search, '%')) " +
+            "OR LOWER(p.barcode) LIKE LOWER(CONCAT('%', :search, '%')))")
     Page<Product> findByFilters(
             @Param("categoryId") UUID categoryId,
             @Param("minPrice") BigDecimal minPrice,
@@ -31,12 +33,26 @@ public interface ProductRepository extends JpaRepository<Product, UUID> {
             Pageable pageable
     );
 
-    @Query("SELECT p FROM Product p WHERE p.stockQuantity < 10")
+    @Query("SELECT p FROM Product p WHERE p.active = true AND p.stockQuantity <= p.reorderPoint")
     List<Product> findLowStockProducts();
 
     long countByActiveTrue();
 
+    List<Product> findByVariantGroupIdAndActiveTrueAndIdNot(String variantGroupId, UUID excludeId);
+
     Optional<Product> findBySku(String sku);
+
+    Optional<Product> findBySkuIgnoreCase(String sku);
+
+    List<Product> findByBarcodeIsNull();
+
+    List<Product> findByIdIn(java.util.Collection<UUID> ids);
+
+    boolean existsBySku(String sku);
+
+    boolean existsByBarcode(String barcode);
+
+    boolean existsByCategoryId(UUID categoryId);
 
     Optional<Product> findByBarcode(String barcode);
 

@@ -31,6 +31,9 @@ public class Product {
 
     private BigDecimal discountPrice;
 
+    // Cost price, admin-only (margin = price - purchasingPrice)
+    private BigDecimal purchasingPrice;
+
     @Column(nullable = false)
     private Integer stockQuantity;
 
@@ -55,6 +58,11 @@ public class Product {
     private String barcode;
 
     private String brand;
+    private String color;
+    private String variantGroupId;
+
+    @Column(name = "sizes", length = 200)
+    private String sizes;
     private Double rating = 0.0;
     private Integer reviewCount = 0;
 
@@ -101,6 +109,11 @@ public class Product {
             return this;
         }
 
+        public ProductBuilder purchasingPrice(BigDecimal purchasingPrice) {
+            product.purchasingPrice = purchasingPrice;
+            return this;
+        }
+
         public ProductBuilder stockQuantity(Integer stockQuantity) {
             product.stockQuantity = stockQuantity;
             return this;
@@ -130,6 +143,21 @@ public class Product {
 
         public ProductBuilder brand(String brand) {
             product.brand = brand;
+            return this;
+        }
+
+        public ProductBuilder color(String color) {
+            product.color = color;
+            return this;
+        }
+
+        public ProductBuilder variantGroupId(String variantGroupId) {
+            product.variantGroupId = variantGroupId;
+            return this;
+        }
+
+        public ProductBuilder sizes(String sizes) {
+            product.sizes = sizes;
             return this;
         }
 

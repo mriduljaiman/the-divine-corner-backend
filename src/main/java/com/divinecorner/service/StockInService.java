@@ -14,6 +14,7 @@ import com.divinecorner.repository.SupplierRepository;
 import com.divinecorner.repository.UserRepository;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.cache.annotation.CacheEvict;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.security.core.context.SecurityContextHolder;
@@ -39,6 +40,7 @@ public class StockInService {
      * Creates a StockMovement entry and updates product inventory
      */
     @Transactional
+    @CacheEvict(value = {"products", "featuredProducts"}, allEntries = true)
     public StockInResponse recordStockIn(StockInRequest request) {
         log.info("Recording stock IN for product: {}, quantity: {}", request.getProductId(), request.getQuantity());
 
@@ -46,11 +48,8 @@ public class StockInService {
         Product product = productRepository.findById(request.getProductId())
             .orElseThrow(() -> new ResourceNotFoundException("Product not found with id: " + request.getProductId()));
 
-        // 2. Get current stock balance
-        Integer currentStock = stockMovementRepository.getCurrentStock(request.getProductId());
-        if (currentStock == null) {
-            currentStock = 0;
-        }
+        // 2. Current stock lives on the product (orders and admin edits update it there)
+        Integer currentStock = product.getStockQuantity() != null ? product.getStockQuantity() : 0;
 
         // 3. Calculate new balance
         Integer newBalance = currentStock + request.getQuantity();
@@ -62,10 +61,10 @@ public class StockInService {
                 .orElseThrow(() -> new ResourceNotFoundException("Supplier not found with id: " + request.getSupplierId()));
         }
 
-        // 5. Get current admin user
-        String email = SecurityContextHolder.getContext().getAuthentication().getName();
-        User admin = userRepository.findByEmail(email)
-            .orElseThrow(() -> new ResourceNotFoundException("User not found: " + email));
+        // 5. Get current admin user (JWT principal is the user's UUID)
+        UUID adminId = (UUID) SecurityContextHolder.getContext().getAuthentication().getPrincipal();
+        User admin = userRepository.findById(adminId)
+            .orElseThrow(() -> new ResourceNotFoundException("User not found: " + adminId));
 
         // 6. Calculate total value if unit cost provided
         BigDecimal totalValue = null;
@@ -92,6 +91,9 @@ public class StockInService {
         movement = stockMovementRepository.save(movement);
         stockMovementRepository.flush();
 
+        product.setStockQuantity(newBalance);
+        productRepository.save(product);
+
         log.info("Stock IN recorded successfully. Movement ID: {}, New balance: {}", movement.getId(), newBalance);
 
         // 8. Map to response
@@ -101,6 +103,7 @@ public class StockInService {
     /**
      * Get stock IN history with filters
      */
+    @Transactional(readOnly = true)
     public Page<StockInResponse> getStockInHistory(
         UUID productId,
         LocalDateTime startDate,
@@ -125,6 +128,7 @@ public class StockInService {
     /**
      * Get single stock IN entry by ID
      */
+    @Transactional(readOnly = true)
     public StockInResponse getStockInById(UUID id) {
         StockMovement movement = stockMovementRepository.findById(id)
             .orElseThrow(() -> new ResourceNotFoundException("Stock IN entry not found with id: " + id));

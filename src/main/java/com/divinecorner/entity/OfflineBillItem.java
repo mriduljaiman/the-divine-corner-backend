@@ -37,7 +37,11 @@ public class OfflineBillItem {
     private Integer quantity;
 
     @Column(nullable = false)
-    private BigDecimal unitPrice;  // Price at time of sale
+    private BigDecimal unitPrice;  // Price actually charged (after bargaining)
+
+    private BigDecimal mrp;        // Listed selling price at time of sale
+
+    private BigDecimal costPrice;  // Purchasing price snapshot, for profit reports
 
     private BigDecimal discount;
 

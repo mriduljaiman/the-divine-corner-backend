@@ -2,7 +2,6 @@ package com.divinecorner.controller;
 
 import com.divinecorner.dto.request.SendChatMessageRequest;
 import com.divinecorner.dto.response.ChatMessageResponse;
-import com.divinecorner.entity.User;
 import com.divinecorner.service.ChatService;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
@@ -12,6 +11,7 @@ import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
+import java.util.UUID;
 import java.util.Map;
 
 @RestController
@@ -23,8 +23,8 @@ public class ChatController {
     @PostMapping("/send")
     public ResponseEntity<ChatMessageResponse> sendMessage(
             @Valid @RequestBody SendChatMessageRequest request,
-            @AuthenticationPrincipal User user) {
-        return ResponseEntity.ok(chatService.sendMessage(request, user));
+            @AuthenticationPrincipal UUID userId) {
+        return ResponseEntity.ok(chatService.sendMessage(request, userId));
     }
 
     @PostMapping("/admin/send")

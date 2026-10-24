@@ -11,6 +11,10 @@ import org.springframework.security.config.http.SessionCreationPolicy;
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.security.web.SecurityFilterChain;
+import org.springframework.http.HttpMethod;
+import org.springframework.http.HttpStatus;
+import jakarta.servlet.http.HttpServletResponse;
+import java.io.IOException;
 import org.springframework.security.web.authentication.UsernamePasswordAuthenticationFilter;
 import org.springframework.web.cors.CorsConfiguration;
 import org.springframework.web.cors.CorsConfigurationSource;
@@ -35,14 +39,29 @@ public class SecurityConfig {
                 .csrf(csrf -> csrf.disable())
                 .cors(cors -> cors.configurationSource(corsConfigurationSource()))
                 .sessionManagement(session -> session.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
+                // Write the JSON error directly: going through /error would lose the security
+                // context and turn every 403 into a 401.
+                .exceptionHandling(ex -> ex
+                        .authenticationEntryPoint((req, res, e) ->
+                                writeError(res, HttpStatus.UNAUTHORIZED, "Please login to continue"))
+                        .accessDeniedHandler((req, res, e) ->
+                                writeError(res, HttpStatus.FORBIDDEN, "Access denied")))
                 .authorizeHttpRequests(auth -> auth
                         .requestMatchers("/auth/**", "/products/**", "/categories/**").permitAll()
+                        .requestMatchers(HttpMethod.GET, "/reviews/product/**", "/questions/product/**").permitAll()
+                        .requestMatchers("/actuator/health", "/error").permitAll()
                         .requestMatchers("/admin/**").hasRole("ADMIN")
                         .anyRequest().authenticated()
                 )
                 .addFilterBefore(jwtAuthenticationFilter, UsernamePasswordAuthenticationFilter.class);
 
         return http.build();
+    }
+
+    private static void writeError(HttpServletResponse response, HttpStatus status, String message) throws IOException {
+        response.setStatus(status.value());
+        response.setContentType("application/json");
+        response.getWriter().write("{\"success\":false,\"message\":\"" + message + "\"}");
     }
 
     @Bean

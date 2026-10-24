@@ -27,6 +27,9 @@ public class OrderItem {
     @Column(nullable = false)
     private BigDecimal price;
 
+    @Column(length = 20)
+    private String size;
+
     private String productName;
     private String productImage;
 }

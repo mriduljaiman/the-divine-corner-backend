@@ -63,6 +63,11 @@ public class ProductController {
         return ResponseEntity.ok(productService.findBySku(sku));
     }
 
+    @GetMapping("/lookup/{code}")
+    public ResponseEntity<ProductResponse> lookup(@PathVariable String code) {
+        return ResponseEntity.ok(productService.lookupByCode(code));
+    }
+
     @GetMapping("/barcode/{barcode}")
     public ResponseEntity<ProductResponse> getProductByBarcode(@PathVariable String barcode) {
         return ResponseEntity.ok(productService.findByBarcode(barcode));

@@ -9,6 +9,7 @@ import com.divinecorner.entity.ProductQuestion;
 import com.divinecorner.entity.User;
 import com.divinecorner.exception.NotFoundException;
 import com.divinecorner.repository.ProductQuestionRepository;
+import com.divinecorner.repository.UserRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
@@ -22,11 +23,15 @@ import java.util.UUID;
 @Service
 @RequiredArgsConstructor
 public class QuestionService {
+    private final UserRepository userRepository;
     private final ProductQuestionRepository questionRepository;
     private final ProductService productService;
 
     @Transactional
-    public QuestionResponse askQuestion(CreateQuestionRequest request, User user) {
+    public QuestionResponse askQuestion(CreateQuestionRequest request, UUID userId) {
+        User user = userRepository.findById(userId)
+                .orElseThrow(() -> new NotFoundException("User not found"));
+
         Product product = productService.findProductById(request.getProductId());
 
         ProductQuestion question = ProductQuestion.builder()
@@ -40,7 +45,10 @@ public class QuestionService {
     }
 
     @Transactional
-    public QuestionResponse answerQuestion(UUID questionId, AnswerQuestionRequest request, User admin) {
+    public QuestionResponse answerQuestion(UUID questionId, AnswerQuestionRequest request, UUID adminId) {
+        User admin = userRepository.findById(adminId)
+                .orElseThrow(() -> new NotFoundException("User not found"));
+
         ProductQuestion question = questionRepository.findById(questionId)
                 .orElseThrow(() -> new NotFoundException("Question not found"));
 

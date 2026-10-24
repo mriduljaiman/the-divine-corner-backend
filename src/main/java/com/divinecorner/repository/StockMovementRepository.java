@@ -26,6 +26,10 @@ public interface StockMovementRepository extends JpaRepository<StockMovement, UU
     @Query("SELECT sm.balanceAfter FROM StockMovement sm WHERE sm.product.id = :productId ORDER BY sm.movementDate DESC LIMIT 1")
     Integer getLastBalance(@Param("productId") UUID productId);
 
+    @Query("SELECT COALESCE(SUM(sm.totalValue), 0) FROM StockMovement sm WHERE sm.movementType = com.divinecorner.enums.MovementType.STOCK_IN " +
+            "AND sm.movementDate >= :from AND sm.movementDate < :to")
+    java.math.BigDecimal purchaseValue(@Param("from") LocalDateTime from, @Param("to") LocalDateTime to);
+
     @Query("SELECT COALESCE(SUM(sm.quantity), 0) FROM StockMovement sm WHERE sm.movementType = 'STOCK_IN' AND sm.movementDate BETWEEN :start AND :end")
     Integer getTotalStockIn(@Param("start") LocalDateTime start, @Param("end") LocalDateTime end);
 

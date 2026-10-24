@@ -9,5 +9,7 @@ import java.util.UUID;
 
 public interface CartItemRepository extends JpaRepository<CartItem, UUID> {
     Optional<CartItem> findByCartAndProduct(Cart cart, Product product);
+    Optional<CartItem> findByCartAndProductAndSize(Cart cart, Product product, String size);
+    Optional<CartItem> findByCartAndProductAndSizeIsNull(Cart cart, Product product);
     void deleteByCart(Cart cart);
 }

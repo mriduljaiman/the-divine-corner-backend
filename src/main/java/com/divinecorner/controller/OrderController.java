@@ -40,6 +40,14 @@ public class OrderController {
         return ResponseEntity.ok(orderService.getMyOrders(userId, PageRequest.of(page, size, sort)));
     }
 
+    @PostMapping("/{id}/cancel")
+    public ResponseEntity<OrderResponse> cancelOrder(
+            @PathVariable UUID id,
+            Authentication authentication) {
+        UUID userId = (UUID) authentication.getPrincipal();
+        return ResponseEntity.ok(orderService.cancelMyOrder(userId, id));
+    }
+
     @GetMapping("/{id}")
     public ResponseEntity<OrderResponse> getOrderById(
             @PathVariable UUID id,

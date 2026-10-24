@@ -4,7 +4,6 @@ import com.divinecorner.dto.request.AnswerQuestionRequest;
 import com.divinecorner.dto.request.CreateQuestionRequest;
 import com.divinecorner.dto.response.PageResponse;
 import com.divinecorner.dto.response.QuestionResponse;
-import com.divinecorner.entity.User;
 import com.divinecorner.service.QuestionService;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
@@ -26,8 +25,8 @@ public class QuestionController {
     @PostMapping
     public ResponseEntity<QuestionResponse> askQuestion(
             @Valid @RequestBody CreateQuestionRequest request,
-            @AuthenticationPrincipal User user) {
-        return ResponseEntity.ok(questionService.askQuestion(request, user));
+            @AuthenticationPrincipal UUID userId) {
+        return ResponseEntity.ok(questionService.askQuestion(request, userId));
     }
 
     @PutMapping("/{id}/answer")
@@ -35,8 +34,8 @@ public class QuestionController {
     public ResponseEntity<QuestionResponse> answerQuestion(
             @PathVariable UUID id,
             @Valid @RequestBody AnswerQuestionRequest request,
-            @AuthenticationPrincipal User admin) {
-        return ResponseEntity.ok(questionService.answerQuestion(id, request, admin));
+            @AuthenticationPrincipal UUID adminId) {
+        return ResponseEntity.ok(questionService.answerQuestion(id, request, adminId));
     }
 
     @GetMapping("/product/{productId}")

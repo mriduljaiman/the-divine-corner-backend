@@ -22,7 +22,7 @@ import java.util.UUID;
  * Admin-only access for recording incoming stock
  */
 @RestController
-@RequestMapping("/api/stock-in")
+@RequestMapping("/stock-in")
 @RequiredArgsConstructor
 public class StockInController {
 

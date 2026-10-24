@@ -47,7 +47,9 @@ public class CloudinaryService {
                     ObjectUtils.asMap(
                             "public_id", publicId,
                             "resource_type", "image",
-                            "folder", folder
+                            "folder", folder,
+                            "transformation", "c_limit,w_1200,q_75,f_jpg",
+                            "format", "jpg"
                     )
             );
 

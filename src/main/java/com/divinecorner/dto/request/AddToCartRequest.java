@@ -15,4 +15,5 @@ public class AddToCartRequest {
     private UUID productId;
     @NotNull @Min(1)
     private Integer quantity;
+    private String size;
 }

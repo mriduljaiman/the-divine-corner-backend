@@ -69,6 +69,8 @@ dependencies {
 
 	// Development
 	developmentOnly 'org.springframework.boot:spring-boot-devtools'
+	// In-memory DB for local smoke testing only (bootRun); never packaged into the jar
+	developmentOnly 'com.h2database:h2:2.3.232'
 }
 
 tasks.named('test') {

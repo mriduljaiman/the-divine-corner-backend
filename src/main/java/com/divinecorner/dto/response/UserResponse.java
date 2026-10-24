@@ -24,4 +24,5 @@ public class UserResponse {
     private String country;
     private String role;
     private Boolean active;
+    private String createdAt;
 }

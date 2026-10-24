@@ -16,12 +16,16 @@ public class UpdateProductRequest {
     private String description;
     private BigDecimal price;
     private BigDecimal discountPrice;
+    private BigDecimal purchasingPrice;
     private Integer stockQuantity;
     private UUID categoryId;
     private List<String> images;
     private String sku;
     private String barcode;
     private String brand;
+    private String color;
+    private String variantGroupId;
+    private List<String> sizes;
     private Boolean active;
     private Boolean featured;
     private Integer reorderPoint;

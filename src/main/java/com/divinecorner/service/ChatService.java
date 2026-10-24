@@ -5,6 +5,8 @@ import com.divinecorner.dto.response.ChatMessageResponse;
 import com.divinecorner.entity.ChatMessage;
 import com.divinecorner.entity.User;
 import com.divinecorner.repository.ChatMessageRepository;
+import com.divinecorner.repository.UserRepository;
+import com.divinecorner.exception.NotFoundException;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -15,10 +17,14 @@ import java.util.UUID;
 @Service
 @RequiredArgsConstructor
 public class ChatService {
+    private final UserRepository userRepository;
     private final ChatMessageRepository chatMessageRepository;
 
     @Transactional
-    public ChatMessageResponse sendMessage(SendChatMessageRequest request, User user) {
+    public ChatMessageResponse sendMessage(SendChatMessageRequest request, UUID userId) {
+        User user = userRepository.findById(userId)
+                .orElseThrow(() -> new NotFoundException("User not found"));
+
         String sessionId = request.getSessionId();
         if (sessionId == null || sessionId.isEmpty()) {
             sessionId = UUID.randomUUID().toString();

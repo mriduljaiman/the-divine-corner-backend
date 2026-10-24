@@ -1,4 +1,4 @@
-﻿package com.divinecorner.repository;
+package com.divinecorner.repository;
 
 import com.divinecorner.entity.User;
 import com.divinecorner.enums.UserRole;
@@ -14,4 +14,5 @@ public interface UserRepository extends JpaRepository<User, UUID> {
     boolean existsByPhone(String phone);
     Page<User> findByRole(UserRole role, Pageable pageable);
     long countByRole(UserRole role);
+    long countByRoleAndCreatedAtGreaterThanEqual(UserRole role, java.time.LocalDateTime from);
 }

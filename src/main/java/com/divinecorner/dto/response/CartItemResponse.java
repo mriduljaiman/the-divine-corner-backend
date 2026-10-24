@@ -15,5 +15,6 @@ public class CartItemResponse {
     private UUID id;
     private ProductResponse product;
     private Integer quantity;
+    private String size;
     private BigDecimal subtotal;
 }

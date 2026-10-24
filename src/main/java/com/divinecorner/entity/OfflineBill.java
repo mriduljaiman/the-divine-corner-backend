@@ -17,7 +17,8 @@ import java.util.UUID;
 @Entity
 @Table(name = "offline_bills", indexes = {
     @Index(name = "idx_bill_number", columnList = "bill_number", unique = true),
-    @Index(name = "idx_bill_date", columnList = "bill_date")
+    @Index(name = "idx_bill_date", columnList = "bill_date"),
+    @Index(name = "idx_bill_customer_phone", columnList = "customer_phone")
 })
 @Getter
 @Setter
@@ -52,6 +53,24 @@ public class OfflineBill {
 
     @Column(nullable = false)
     private BigDecimal total;
+
+    /** Received at the counter (plus later due payments). */
+    private BigDecimal amountPaid;
+
+    /** Still to be collected from the customer. */
+    private BigDecimal amountDue;
+
+    /** Paid at the counter when the bill was made (amountPaid also grows with later due payments). */
+    private BigDecimal paidAtBilling;
+
+    /** Voided bills are kept for audit but excluded from every report. */
+    @Builder.Default
+    private Boolean voided = false;
+
+    private LocalDateTime voidedAt;
+
+    @Column(length = 500)
+    private String voidReason;
 
     @Column(nullable = false)
     private String paymentMethod;  // CASH, UPI, CARD

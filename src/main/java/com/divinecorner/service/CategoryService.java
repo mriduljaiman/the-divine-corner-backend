@@ -9,6 +9,7 @@ import com.divinecorner.entity.Category;
 import com.divinecorner.exception.BadRequestException;
 import com.divinecorner.exception.NotFoundException;
 import com.divinecorner.repository.CategoryRepository;
+import com.divinecorner.repository.ProductRepository;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.cache.annotation.CacheEvict;
@@ -26,6 +27,7 @@ import java.util.UUID;
 public class CategoryService {
 
     private final CategoryRepository categoryRepository;
+    private final ProductRepository productRepository;
 
     @Transactional
     // @CacheEvict(value = "categories", allEntries = true) // Temporarily disabled
@@ -108,6 +110,9 @@ public class CategoryService {
         log.info("Deleting category: {}", id);
 
         Category category = findCategoryById(id);
+        if (productRepository.existsByCategoryId(id)) {
+            throw new BadRequestException("Category has products. Move or delete them first, or mark the category inactive");
+        }
         categoryRepository.delete(category);
 
         log.info("Category deleted: {}", id);

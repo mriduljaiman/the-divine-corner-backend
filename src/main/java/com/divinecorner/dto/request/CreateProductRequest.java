@@ -18,11 +18,11 @@ import java.util.UUID;
 public class CreateProductRequest {
     @NotBlank
     private String name;
-    @NotBlank
     private String description;
     @NotNull @DecimalMin("0.01")
     private BigDecimal price;
     private BigDecimal discountPrice;
+    private BigDecimal purchasingPrice;
     @NotNull @Min(0)
     private Integer stockQuantity;
     @NotNull
@@ -31,6 +31,9 @@ public class CreateProductRequest {
     private String sku;
     private String barcode;
     private String brand;
+    private String color;
+    private String variantGroupId;
+    private List<String> sizes;
     private Boolean featured;
     private Integer reorderPoint;
     private Integer minStockLevel;

@@ -1,9 +1,10 @@
-﻿package com.divinecorner.controller;
+package com.divinecorner.controller;
 
 import com.divinecorner.dto.*;
 import com.divinecorner.dto.LoginRequest;
 import com.divinecorner.dto.RegisterRequest;
 import com.divinecorner.dto.SendOtpRequest;
+import com.divinecorner.dto.request.GoogleAuthRequest;
 import com.divinecorner.dto.response.ApiResponse;
 import com.divinecorner.dto.response.AuthResponse;
 import com.divinecorner.service.AuthService;
@@ -47,6 +48,13 @@ public class AuthController {
     @PostMapping("/refresh")
     public ResponseEntity<AuthResponse> refresh(HttpServletRequest request, HttpServletResponse response) {
         return ResponseEntity.ok(authService.refresh(request, response));
+    }
+
+    @PostMapping("/google")
+    public ResponseEntity<AuthResponse> googleLogin(
+            @Valid @RequestBody GoogleAuthRequest request,
+            HttpServletResponse response) {
+        return ResponseEntity.ok(authService.googleLogin(request.getIdToken(), response));
     }
 
     @PostMapping("/logout")

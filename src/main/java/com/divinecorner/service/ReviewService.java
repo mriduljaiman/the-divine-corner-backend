@@ -7,8 +7,12 @@ import com.divinecorner.entity.Product;
 import com.divinecorner.entity.Review;
 import com.divinecorner.entity.User;
 import com.divinecorner.exception.BadRequestException;
+import com.divinecorner.enums.OrderStatus;
+import com.divinecorner.repository.OrderItemRepository;
 import com.divinecorner.repository.ReviewRepository;
 import com.divinecorner.repository.ProductRepository;
+import com.divinecorner.repository.UserRepository;
+import com.divinecorner.exception.NotFoundException;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
@@ -22,12 +26,17 @@ import java.util.UUID;
 @Service
 @RequiredArgsConstructor
 public class ReviewService {
+    private final UserRepository userRepository;
     private final ReviewRepository reviewRepository;
     private final ProductRepository productRepository;
     private final ProductService productService;
+    private final OrderItemRepository orderItemRepository;
 
     @Transactional
-    public ReviewResponse createReview(CreateReviewRequest request, User user) {
+    public ReviewResponse createReview(CreateReviewRequest request, UUID userId) {
+        User user = userRepository.findById(userId)
+                .orElseThrow(() -> new NotFoundException("User not found"));
+
         // Check if user already reviewed this product
         if (reviewRepository.existsByProductIdAndUserId(request.getProductId(), user.getId())) {
             throw new BadRequestException("You have already reviewed this product");
@@ -35,12 +44,16 @@ public class ReviewService {
 
         Product product = productService.findProductById(request.getProductId());
 
+        boolean verified = orderItemRepository.existsByOrderUserIdAndProductIdAndOrderStatus(
+                user.getId(), product.getId(), OrderStatus.DELIVERED);
+
         Review review = Review.builder()
                 .product(product)
                 .user(user)
                 .rating(request.getRating())
                 .comment(request.getComment())
                 .images(request.getImages() != null ? request.getImages() : new ArrayList<>())
+                .verified(verified)
                 .build();
 
         review = reviewRepository.save(review);

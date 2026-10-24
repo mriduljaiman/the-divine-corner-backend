@@ -1,4 +1,4 @@
-﻿package com.divinecorner.service;
+package com.divinecorner.service;
 
 import com.divinecorner.dto.*;
 import com.divinecorner.dto.LoginRequest;
@@ -22,6 +22,8 @@ import org.springframework.http.ResponseCookie;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.web.client.RestTemplate;
+import java.util.Map;
 import java.util.UUID;
 
 @Service
@@ -131,6 +133,54 @@ public class AuthService {
                 .build();
     }
 
+    @Transactional
+    public AuthResponse googleLogin(String idToken, HttpServletResponse response) {
+        @SuppressWarnings("unchecked")
+        Map<String, Object> tokenInfo;
+        try {
+            RestTemplate restTemplate = new RestTemplate();
+            tokenInfo = restTemplate.getForObject(
+                "https://oauth2.googleapis.com/tokeninfo?id_token=" + idToken, Map.class);
+        } catch (Exception e) {
+            throw new BadRequestException("Invalid Google token");
+        }
+
+        if (tokenInfo == null || tokenInfo.get("email") == null) {
+            throw new BadRequestException("Invalid Google token");
+        }
+
+        String email = (String) tokenInfo.get("email");
+        String firstName = tokenInfo.getOrDefault("given_name", "User").toString();
+        String lastNameRaw = tokenInfo.getOrDefault("family_name", "-").toString();
+        final String lastName = lastNameRaw.isBlank() ? "-" : lastNameRaw;
+
+        User user = userRepository.findByEmail(email).orElseGet(() -> {
+            User newUser = User.builder()
+                    .email(email)
+                    .password(passwordEncoder.encode(UUID.randomUUID().toString()))
+                    .firstName(firstName)
+                    .lastName(lastName)
+                    .role(UserRole.USER)
+                    .active(true)
+                    .build();
+            return userRepository.save(newUser);
+        });
+
+        if (!user.getActive()) throw new BadRequestException("Account is deactivated");
+
+        String accessToken = jwtUtil.generateAccessToken(user.getId(), user.getEmail(), user.getRole().name());
+        String refreshToken = jwtUtil.generateRefreshToken(user.getId());
+        setAuthCookies(accessToken, refreshToken, response);
+
+        return AuthResponse.builder()
+                .message("Login successful")
+                .user(mapToUserResponse(user))
+                .accessToken(accessToken)
+                .refreshToken(refreshToken)
+                .tokenType("Bearer")
+                .build();
+    }
+
     public void logout(HttpServletResponse response) {
         clearAuthCookies(response);
     }
@@ -156,6 +206,9 @@ public class AuthService {
         UUID userId = UUID.fromString(claims.getSubject());
         User user = userRepository.findById(userId)
                 .orElseThrow(() -> new BadRequestException("User not found"));
+        if (!Boolean.TRUE.equals(user.getActive())) {
+            throw new BadRequestException("Account is deactivated");
+        }
         String newAccess = jwtUtil.generateAccessToken(user.getId(), user.getEmail(), user.getRole().name());
         String newRefresh = jwtUtil.generateRefreshToken(user.getId());
         setAuthCookies(newAccess, newRefresh, response);

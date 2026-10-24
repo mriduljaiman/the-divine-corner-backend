@@ -25,9 +25,10 @@ public class AdminOrderController {
     @GetMapping
     public ResponseEntity<PageResponse<OrderResponse>> getAllOrders(
             @RequestParam(defaultValue = "0") int page,
-            @RequestParam(defaultValue = "10") int size) {
+            @RequestParam(defaultValue = "10") int size,
+            @RequestParam(required = false) String status) {
         Sort sort = Sort.by("createdAt").descending();
-        return ResponseEntity.ok(orderService.getAllOrders(PageRequest.of(page, size, sort)));
+        return ResponseEntity.ok(orderService.getAllOrders(status, PageRequest.of(page, size, sort)));
     }
 
     @GetMapping("/{id}")

@@ -6,8 +6,10 @@ import com.divinecorner.dto.response.PageResponse;
 import com.divinecorner.dto.response.UserResponse;
 import com.divinecorner.entity.User;
 import com.divinecorner.enums.UserRole;
+import com.divinecorner.exception.BadRequestException;
 import com.divinecorner.exception.NotFoundException;
 import com.divinecorner.repository.UserRepository;
+import com.divinecorner.utils.TimeUtil;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
@@ -62,7 +64,7 @@ public class UserService {
     public void deleteUser(UUID userId) {
         User user = findUserById(userId);
         if (user.getRole() == UserRole.ADMIN) {
-            throw new RuntimeException("Cannot delete admin user");
+            throw new BadRequestException("Cannot delete admin user");
         }
         userRepository.delete(user);
     }
@@ -70,6 +72,9 @@ public class UserService {
     @Transactional
     public UserResponse toggleUserStatus(UUID userId) {
         User user = findUserById(userId);
+        if (user.getRole() == UserRole.ADMIN) {
+            throw new BadRequestException("Admin accounts cannot be deactivated");
+        }
         user.setActive(!user.getActive());
         user = userRepository.save(user);
         return mapToUserResponse(user);
@@ -94,6 +99,7 @@ public class UserService {
                 .country(user.getCountry())
                 .role(user.getRole().name())
                 .active(user.getActive())
+                .createdAt(TimeUtil.format(user.getCreatedAt()))
                 .build();
     }
 

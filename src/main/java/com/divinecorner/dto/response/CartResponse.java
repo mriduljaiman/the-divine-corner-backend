@@ -16,5 +16,7 @@ import java.util.UUID;
 public class CartResponse {
     private UUID id;
     private List<CartItemResponse> items;
-    private BigDecimal totalAmount;
+    private BigDecimal totalAmount;      // items subtotal
+    private BigDecimal shippingCharges;
+    private BigDecimal grandTotal;       // totalAmount + shippingCharges
 }

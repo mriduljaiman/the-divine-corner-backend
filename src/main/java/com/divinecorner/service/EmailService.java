@@ -5,7 +5,9 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.mail.SimpleMailMessage;
 import org.springframework.mail.javamail.JavaMailSender;
+import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
+import org.springframework.web.server.ResponseStatusException;
 
 @Service
 @RequiredArgsConstructor
@@ -34,7 +36,7 @@ public class EmailService {
             mailSender.send(message);
         } catch (Exception e) {
             log.error("Failed to send OTP email to {}: {}", to, e.getMessage());
-            throw new RuntimeException("Failed to send OTP email. Please try again.");
+            throw new ResponseStatusException(HttpStatus.SERVICE_UNAVAILABLE, "Failed to send OTP email. Please try again.");
         }
     }
 }

@@ -3,7 +3,6 @@ package com.divinecorner.controller;
 import com.divinecorner.dto.request.CreateReviewRequest;
 import com.divinecorner.dto.response.PageResponse;
 import com.divinecorner.dto.response.ReviewResponse;
-import com.divinecorner.entity.User;
 import com.divinecorner.service.ReviewService;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
@@ -23,8 +22,8 @@ public class ReviewController {
     @PostMapping
     public ResponseEntity<ReviewResponse> createReview(
             @Valid @RequestBody CreateReviewRequest request,
-            @AuthenticationPrincipal User user) {
-        return ResponseEntity.ok(reviewService.createReview(request, user));
+            @AuthenticationPrincipal UUID userId) {
+        return ResponseEntity.ok(reviewService.createReview(request, userId));
     }
 
     @GetMapping("/product/{productId}")

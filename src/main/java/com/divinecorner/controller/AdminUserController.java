@@ -24,7 +24,8 @@ public class AdminUserController {
     public ResponseEntity<PageResponse<UserResponse>> getAllUsers(
             @RequestParam(defaultValue = "0") int page,
             @RequestParam(defaultValue = "10") int size) {
-        return ResponseEntity.ok(userService.getAllUsers(PageRequest.of(page, size)));
+        return ResponseEntity.ok(userService.getAllUsers(
+                PageRequest.of(page, Math.min(size, 200), org.springframework.data.domain.Sort.by("createdAt").descending())));
     }
 
     @GetMapping("/{id}")

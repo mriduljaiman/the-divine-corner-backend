@@ -18,12 +18,17 @@ public class ProductResponse {
     private String description;
     private BigDecimal price;
     private BigDecimal discountPrice;
+    private BigDecimal purchasingPrice; // only populated for admins
     private Integer stockQuantity;
     private CategoryResponse category;
     private List<String> images;
     private String sku;
     private String barcode;
     private String brand;
+    private String color;
+    private String variantGroupId;
+    private List<String> sizes;
+    private List<ProductVariantResponse> variants;
     private Double rating;
     private Integer reviewCount;
     private Boolean active;
