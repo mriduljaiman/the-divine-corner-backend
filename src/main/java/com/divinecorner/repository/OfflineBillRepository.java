@@ -45,7 +45,7 @@ public interface OfflineBillRepository extends JpaRepository<OfflineBill, UUID> 
     List<Object[]> dailyRows(@Param("from") LocalDateTime from, @Param("to") LocalDateTime to);
 
     /** Gross profit; items with unknown cost count as zero profit. */
-    @Query("SELECT COALESCE(SUM((i.unitPrice - COALESCE(i.costPrice, i.unitPrice)) * i.quantity), 0) " +
+    @Query("SELECT COALESCE(SUM(i.subtotal - COALESCE(i.costPrice * i.quantity, i.subtotal)), 0) " +
             "FROM OfflineBillItem i WHERE i.bill.voided = false AND i.bill.billDate >= :from AND i.bill.billDate < :to")
     BigDecimal grossProfit(@Param("from") LocalDateTime from, @Param("to") LocalDateTime to);
 

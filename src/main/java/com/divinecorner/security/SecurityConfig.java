@@ -73,6 +73,9 @@ public class SecurityConfig {
                 "Content-Type", "Authorization", "X-Refresh-Token",
                 "Accept", "Origin", "X-Requested-With"));
         configuration.setAllowCredentials(true);
+        // Let browsers reuse the preflight answer (Chrome caps this at 2h). Without it every
+        // authenticated call from the storefront paid an extra round-trip to the server.
+        configuration.setMaxAge(7200L);
 
         UrlBasedCorsConfigurationSource source = new UrlBasedCorsConfigurationSource();
         source.registerCorsConfiguration("/**", configuration);

@@ -66,6 +66,11 @@ public class AdminPosController {
         return ResponseEntity.ok(billingService.createManualDue(adminId, request));
     }
 
+    @PostMapping("/bills/{id}/discount")
+    public ResponseEntity<BillResponse> discount(@PathVariable UUID id, @Valid @RequestBody BillDiscountRequest request) {
+        return ResponseEntity.ok(billingService.applyBillDiscount(id, request));
+    }
+
     @PutMapping("/bills/{id}/due-date")
     public ResponseEntity<BillResponse> setDueDate(@PathVariable UUID id, @RequestBody DueDateRequest request) {
         return ResponseEntity.ok(billingService.setDueDate(id, request));

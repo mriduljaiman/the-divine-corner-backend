@@ -102,6 +102,18 @@ public class BillingService {
         }
         total = money(total);
 
+        BigDecimal billDiscount = money(request.billDiscount());
+        if (billDiscount.compareTo(total) >= 0) {
+            throw new BadRequestException("Bargain discount must be less than the bill total (₹" + total + ")");
+        }
+        // final line amounts after spreading the bill-level bargain over the items
+        List<BigDecimal> lineTotals = new ArrayList<>();
+        for (BillItemRequest item : request.items()) {
+            lineTotals.add(money(money(item.unitPrice()).multiply(BigDecimal.valueOf(item.quantity()))));
+        }
+        List<BigDecimal> shares = spread(lineTotals, billDiscount);
+        total = total.subtract(billDiscount);
+
         BigDecimal paid = request.amountPaid() == null ? total : money(request.amountPaid());
         if (paid.compareTo(total) > 0) {
             throw new BadRequestException("Paid amount cannot be more than the bill total (₹" + total + ")");
@@ -139,10 +151,11 @@ public class BillingService {
                 .build();
         bill = billRepository.save(bill);
 
-        for (BillItemRequest item : request.items()) {
+        for (int idx = 0; idx < request.items().size(); idx++) {
+            BillItemRequest item = request.items().get(idx);
             Product product = products.get(item.productId());
-            BigDecimal unitPrice = money(item.unitPrice());
-            BigDecimal lineTotal = money(unitPrice.multiply(BigDecimal.valueOf(item.quantity())));
+            BigDecimal lineTotal = lineTotals.get(idx).subtract(shares.get(idx));
+            BigDecimal unitPrice = lineTotal.divide(BigDecimal.valueOf(item.quantity()), 2, RoundingMode.HALF_UP);
             BigDecimal mrp = listedPrice(product);
 
             bill.getItems().add(OfflineBillItem.builder()
@@ -154,7 +167,7 @@ public class BillingService {
                     .unitPrice(unitPrice)
                     .mrp(mrp)
                     .costPrice(product.getPurchasingPrice())
-                    .discount(money(mrp.subtract(unitPrice).max(BigDecimal.ZERO).multiply(BigDecimal.valueOf(item.quantity()))))
+                    .discount(money(mrp.multiply(BigDecimal.valueOf(item.quantity())).subtract(lineTotal).max(BigDecimal.ZERO)))
                     .subtotal(lineTotal)
                     .build());
 
@@ -252,6 +265,74 @@ public class BillingService {
         bill = billRepository.save(bill);
         log.info("Manual due {} for {}: total={}, paid={}, due={}", bill.getBillNumber(), phone, total, paid, due);
         return toResponse(bill, List.of());
+    }
+
+    /**
+     * The customer bargained after the bill was made (e.g. ₹30 bill, paid ₹20 and the shop agreed).
+     * Lowers the bill total and the due by the same amount; it is a discount, not a payment.
+     */
+    @Transactional
+    public BillResponse applyBillDiscount(UUID billId, BillDiscountRequest request) {
+        OfflineBill bill = findBill(billId);
+        entityManager.refresh(bill, LockModeType.PESSIMISTIC_WRITE);
+        if (Boolean.TRUE.equals(bill.getVoided())) {
+            throw new BadRequestException("Bill is void");
+        }
+        BigDecimal amount = money(request.amount());
+        if (amount.compareTo(bill.getAmountDue()) > 0) {
+            throw new BadRequestException("Discount cannot be more than the due (₹" + bill.getAmountDue() + ")");
+        }
+        List<OfflineBillItem> items = bill.getItems();
+        List<BigDecimal> shares = spread(items.stream().map(OfflineBillItem::getSubtotal).toList(), amount);
+        for (int i = 0; i < items.size(); i++) {
+            OfflineBillItem it = items.get(i);
+            BigDecimal sub = it.getSubtotal().subtract(shares.get(i));
+            it.setSubtotal(sub);
+            it.setUnitPrice(sub.divide(BigDecimal.valueOf(it.getQuantity()), 2, RoundingMode.HALF_UP));
+            it.setDiscount(money((it.getDiscount() != null ? it.getDiscount() : BigDecimal.ZERO).add(shares.get(i))));
+        }
+        bill.setTotal(bill.getTotal().subtract(amount));
+        bill.setDiscount(money((bill.getDiscount() != null ? bill.getDiscount() : BigDecimal.ZERO).add(amount)));
+        bill.setAmountDue(bill.getAmountDue().subtract(amount));
+        if (bill.getAmountDue().signum() == 0) {
+            bill.setDueDate(null);
+        }
+        String note = "Bargain discount ₹" + amount + (request.note() != null && !request.note().isBlank() ? " — " + request.note().trim() : "");
+        bill.setNotes(bill.getNotes() == null ? note : bill.getNotes() + " | " + note);
+        log.info("Bill {}: bargain discount {} applied, due now {}", bill.getBillNumber(), amount, bill.getAmountDue());
+        return toResponse(billRepository.save(bill), duePaymentRepository.findByBillIdOrderByPaidAtAsc(billId));
+    }
+
+    /**
+     * Split {@code amount} across lines in proportion to their value, to the paisa;
+     * rounding leftovers go to the biggest lines so the shares always add up exactly.
+     */
+    static List<BigDecimal> spread(List<BigDecimal> lines, BigDecimal amount) {
+        List<BigDecimal> shares = new ArrayList<>();
+        BigDecimal sum = lines.stream().reduce(BigDecimal.ZERO, BigDecimal::add);
+        if (amount.signum() == 0 || sum.signum() == 0) {
+            lines.forEach(l -> shares.add(BigDecimal.ZERO.setScale(2)));
+            return shares;
+        }
+        BigDecimal given = BigDecimal.ZERO;
+        for (BigDecimal l : lines) {
+            BigDecimal s = amount.multiply(l).divide(sum, 2, RoundingMode.DOWN);
+            shares.add(s);
+            given = given.add(s);
+        }
+        BigDecimal left = amount.subtract(given);
+        Integer[] order = new Integer[lines.size()];
+        for (int i = 0; i < order.length; i++) order[i] = i;
+        Arrays.sort(order, (a, b) -> lines.get(b).compareTo(lines.get(a)));
+        BigDecimal paisa = new BigDecimal("0.01");
+        for (int k = 0; left.signum() > 0; k = (k + 1) % order.length) {
+            int i = order[k];
+            if (shares.get(i).add(paisa).compareTo(lines.get(i)) <= 0) {
+                shares.set(i, shares.get(i).add(paisa));
+                left = left.subtract(paisa);
+            }
+        }
+        return shares;
     }
 
     @Transactional

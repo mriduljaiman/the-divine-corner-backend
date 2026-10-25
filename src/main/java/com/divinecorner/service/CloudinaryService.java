@@ -4,6 +4,7 @@ import com.cloudinary.Cloudinary;
 import com.cloudinary.utils.ObjectUtils;
 import com.divinecorner.dto.response.CloudinaryUploadResponse;
 import com.divinecorner.exception.BadRequestException;
+import com.divinecorner.utils.ImageCompressor;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
@@ -39,21 +40,22 @@ public class CloudinaryService {
         validateFile(file);
 
         try {
+            byte[] jpeg = compressed(file);
             String publicId = folder + "/" + UUID.randomUUID().toString();
 
             @SuppressWarnings("unchecked")
             Map<String, Object> uploadResult = cloudinary.uploader().upload(
-                    file.getBytes(),
+                    jpeg,
                     ObjectUtils.asMap(
                             "public_id", publicId,
                             "resource_type", "image",
                             "folder", folder,
-                            "transformation", "c_limit,w_1200,q_75,f_jpg",
                             "format", "jpg"
                     )
             );
+            ensureStoredUnderLimit(uploadResult);
 
-            log.info("Image uploaded successfully: {}", uploadResult.get("public_id"));
+            log.info("Image uploaded: {} ({} bytes, original {} bytes)", uploadResult.get("public_id"), jpeg.length, file.getSize());
 
             return CloudinaryUploadResponse.builder()
                     .publicId((String) uploadResult.get("public_id"))
@@ -78,11 +80,12 @@ public class CloudinaryService {
         validateFile(file);
 
         try {
+            byte[] jpeg = compressed(file);
             String publicId = folder + "/" + UUID.randomUUID().toString();
 
             @SuppressWarnings("unchecked")
             Map<String, Object> uploadResult = cloudinary.uploader().upload(
-                    file.getBytes(),
+                    jpeg,
                     ObjectUtils.asMap(
                             "public_id", publicId,
                             "resource_type", "image",
@@ -97,6 +100,7 @@ public class CloudinaryService {
                             )
                     )
             );
+            ensureStoredUnderLimit(uploadResult);
 
             return CloudinaryUploadResponse.builder()
                     .publicId((String) uploadResult.get("public_id"))
@@ -153,6 +157,20 @@ public class CloudinaryService {
                         .quality("auto")
                         .fetchFormat("auto"))
                 .generate(publicId);
+    }
+
+    /** Every stored image must be at most 20KB: re-encode on the server whatever the client sent. */
+    private byte[] compressed(MultipartFile file) throws IOException {
+        return ImageCompressor.toMaxSizeJpeg(file.getBytes());
+    }
+
+    /** Belt and braces: if Cloudinary reports a bigger asset, remove it and fail the upload. */
+    private void ensureStoredUnderLimit(Map<String, Object> uploadResult) {
+        Object bytes = uploadResult.get("bytes");
+        if (bytes instanceof Number n && n.longValue() > ImageCompressor.MAX_BYTES) {
+            deleteImage((String) uploadResult.get("public_id"));
+            throw new BadRequestException("Image could not be stored under 20KB, please try another photo");
+        }
     }
 
     private void validateFile(MultipartFile file) {

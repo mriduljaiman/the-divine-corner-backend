@@ -192,7 +192,8 @@ public class ProductService {
             if (barcode != null && !barcode.equals(product.getBarcode()) && productRepository.existsByBarcode(barcode)) {
                 throw new BadRequestException("Barcode '" + barcode + "' already exists");
             }
-            product.setBarcode(barcode);
+            // A blank value never removes the barcode: printed labels depend on it
+            if (barcode != null) product.setBarcode(barcode);
         }
         if (request.getBrand() != null) product.setBrand(blankToNull(request.getBrand()));
         if (request.getActive() != null) product.setActive(request.getActive());

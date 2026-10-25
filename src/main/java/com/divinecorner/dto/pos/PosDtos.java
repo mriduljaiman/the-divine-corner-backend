@@ -39,7 +39,15 @@ public final class PosDtos {
             String paymentMethod,
             @Size(max = 1000) String notes,
             /** Promise date for the due part (optional). */
-            LocalDate dueDate) {
+            LocalDate dueDate,
+            /** Bargain on the whole bill ("₹30 bill, settled at ₹20" -> 10). Not a due. */
+            @DecimalMin(value = "0.00") BigDecimal billDiscount) {
+    }
+
+    /** Lower the price of an existing bill after a bargain; reduces what is owed, never a payment. */
+    public record BillDiscountRequest(
+            @NotNull @DecimalMin(value = "0.01") BigDecimal amount,
+            @Size(max = 500) String note) {
     }
 
     /** An item in a hand-written due entry; productId is optional and never moves stock. */
