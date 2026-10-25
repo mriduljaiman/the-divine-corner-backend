@@ -187,17 +187,16 @@ public class AuthService {
 
     @Transactional(readOnly = true)
     public AuthResponse refresh(HttpServletRequest request, HttpServletResponse response) {
-        String refreshToken = null;
-        if (request.getCookies() != null) {
+        // The header is the token the app is holding right now; prefer it over a cookie that may be
+        // left over from another account used earlier in the same browser.
+        String refreshToken = request.getHeader("X-Refresh-Token");
+        if ((refreshToken == null || refreshToken.isBlank()) && request.getCookies() != null) {
             for (Cookie c : request.getCookies()) {
                 if (refreshTokenCookie.equals(c.getName())) {
                     refreshToken = c.getValue();
                     break;
                 }
             }
-        }
-        if (refreshToken == null) {
-            refreshToken = request.getHeader("X-Refresh-Token");
         }
         if (refreshToken == null || !jwtUtil.validateToken(refreshToken, true)) {
             throw new BadRequestException("Invalid or expired refresh token");

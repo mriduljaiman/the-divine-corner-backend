@@ -24,6 +24,8 @@ public interface OfflineBillRepository extends JpaRepository<OfflineBill, UUID> 
 
     List<OfflineBill> findByCustomerPhoneOrderByBillDateDesc(String customerPhone);
 
+    List<OfflineBill> findByVoidedFalseAndAmountDueGreaterThan(BigDecimal amount);
+
     List<OfflineBill> findByCustomerPhoneAndVoidedFalseAndAmountDueGreaterThanOrderByBillDateAsc(String customerPhone, BigDecimal amount);
 
     /** phone, name, total due, bills with due, last bill date */

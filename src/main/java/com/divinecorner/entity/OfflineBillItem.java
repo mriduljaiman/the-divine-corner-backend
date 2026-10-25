@@ -25,8 +25,9 @@ public class OfflineBillItem {
     @JoinColumn(name = "bill_id", nullable = false)
     private OfflineBill bill;
 
+    /** Null for items typed by hand in a manual due entry (not tied to inventory). */
     @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "product_id", nullable = false)
+    @JoinColumn(name = "product_id")
     private Product product;
 
     private String productName;  // Snapshot at time of sale

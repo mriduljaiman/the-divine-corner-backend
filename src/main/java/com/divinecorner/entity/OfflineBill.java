@@ -72,6 +72,13 @@ public class OfflineBill {
     @Column(length = 500)
     private String voidReason;
 
+    /** POS = scanned at the counter (moves stock); MANUAL = due entered by hand (no stock change). */
+    @Column(length = 10)
+    private String source;
+
+    /** Date the customer promised to clear the due (drives reminders). */
+    private java.time.LocalDate dueDate;
+
     @Column(nullable = false)
     private String paymentMethod;  // CASH, UPI, CARD
 

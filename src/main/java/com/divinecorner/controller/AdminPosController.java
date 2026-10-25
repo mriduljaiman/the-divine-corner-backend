@@ -60,6 +60,28 @@ public class AdminPosController {
         return ResponseEntity.ok(billingService.voidBill(adminId, id, request));
     }
 
+    @PostMapping("/dues/manual")
+    public ResponseEntity<BillResponse> manualDue(@AuthenticationPrincipal UUID adminId,
+                                                  @Valid @RequestBody ManualDueRequest request) {
+        return ResponseEntity.ok(billingService.createManualDue(adminId, request));
+    }
+
+    @PutMapping("/bills/{id}/due-date")
+    public ResponseEntity<BillResponse> setDueDate(@PathVariable UUID id, @RequestBody DueDateRequest request) {
+        return ResponseEntity.ok(billingService.setDueDate(id, request));
+    }
+
+    @GetMapping("/customers/{phone}/ledger")
+    public ResponseEntity<LedgerResponse> ledger(@PathVariable String phone) {
+        return ResponseEntity.ok(billingService.ledger(phone));
+    }
+
+    @PostMapping("/customers/{phone}/reminded")
+    public ResponseEntity<Void> reminded(@PathVariable String phone) {
+        billingService.markReminded(phone);
+        return ResponseEntity.noContent().build();
+    }
+
     @GetMapping("/dues")
     public ResponseEntity<List<DueCustomerResponse>> dues() {
         return ResponseEntity.ok(billingService.dueCustomers());

@@ -39,6 +39,9 @@ public class DuePayment {
     @JoinColumn(name = "received_by")
     private User receivedBy;
 
-    @CreationTimestamp
+    /** When the money was received (can be back-dated by the admin). */
     private LocalDateTime paidAt;
+
+    @CreationTimestamp
+    private LocalDateTime recordedAt;
 }
